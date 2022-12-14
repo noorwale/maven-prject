@@ -1,62 +1,15 @@
 pipeline {
-    agent any 
+    agent any
+
     stages {
-        stage('Compile and Clean') { 
+        stage('checkout') {
             steps {
-
-                sh "mvn clean compile"
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'Git_cred', url: 'https://github.com/noorwale/maven-prject.git']]])
             }
         }
-        stage('Test') { 
-            steps {
-                sh "mvn test site"
-            }
-            
-             post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'   
-                }
-            }     
-        }
-
-        stage('deploy') { 
-            steps {
-                sh "mvn package"
-            }
-        }
-
-
-        stage('Build Docker image'){
-            steps {
-                sh 'docker build -t anvbhaskar/docker_jenkins_pipeline:${BUILD_NUMBER} .'
-            }
-        }
-
-        stage('Docker Login'){
-            
-            steps {
-                 withCredentials([string(credentialsId: 'DockerId', variable: 'Dockerpwd')]) {
-                    sh "docker login -u anvbhaskar -p ${Dockerpwd}"
-                }
-            }                
-        }
-
-        stage('Docker Push'){
-            steps {
-                sh 'docker push anvbhaskar/docker_jenkins_pipeline:${BUILD_NUMBER}'
-            }
-        }
-        
-        stage('Docker deploy'){
-            steps {
-                sh 'docker run -itd -p 8081:8080 anvbhaskar/springboot:0.0.3'
-            }
-        }
-
-        
-        stage('Archving') { 
-            steps {
-                 archiveArtifacts '**/target/*.jar'
+        stage('build'){
+            steps{
+                sh 'mvn clean install'
             }
         }
     }
